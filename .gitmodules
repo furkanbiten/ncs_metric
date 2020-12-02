@@ -1,3 +1,4 @@
 [submodule "SPICE"]
 	path = SPICE
-	url = https://github.com/peteanderson80/SPICE
+	url = git@github.com:furkanbiten/SPICE.git
+	branch = master
