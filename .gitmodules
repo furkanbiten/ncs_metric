@@ -1,0 +1,3 @@
+[submodule "SPICE"]
+	path = SPICE
+	url = https://github.com/peteanderson80/SPICE
