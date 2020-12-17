@@ -11,15 +11,15 @@ import json
 import tqdm
 # import sys
 # sys.path.append("coco-caption")
-from pycocotools.coco import COCO
-from pycocoevalcap.cider.cider import Cider
+# from pycocotools.coco import COCO
+# from pycocoevalcap.cider.cider import Cider
 
 import copy
 from collections import defaultdict
 import numpy as np
-import pdb
+# import pdb
 import math
-
+import argparse
 
 def precook(s, n=4, out=False):
     """
@@ -268,24 +268,28 @@ class CiderScorer(object):
 
 
 if __name__ == "__main__":
-    processed = json.load(open('../RelationalAxioms/data/MSCOCO/dataset_coco.json'))
-    karpathy_test = [p['imgid'] for p in processed['images'] if p['split'] == 'test']
-    captions = {}
-    for elm in processed['images']:
-        if elm['split'] == 'test':
-            temp = [sent['raw'].lower() for sent in elm['sentences']]
-
-            captions[elm['filename']] = temp[:5]
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--root_path', type=str, default='./data')
+    parser.add_argument('--dataset', type=str, default='flickr')
+    parser.add_argument('--out_path', type=str, default='./out')
+    args = parser.parse_args()
+    captions = json.load(open(os.path.join(args.root_path, args.dataset+'_test.json'), 'r'))
+    # processed = json.load(open('../RelationalAxioms/data/MSCOCO/dataset_coco.json'))
+    # karpathy_test = [p['imgid'] for p in processed['images'] if p['split'] == 'test']
+    # captions = {}
+    # for elm in processed['images']:
+    #     if elm['split'] == 'test':
+    #         temp = [sent['raw'].lower() for sent in elm['sentences']]
+    #
+    #         captions[elm['filename']] = temp[:5]
 
     # hypo = {0:[captions[0]]}
     # ref = {0: captions[:5]}
+    captions = {cap['image_id']: [c.lower() for c in cap['refs']] for cap in captions}
     cider = CiderScorer()
 
-    file_name = []
     for k, v in captions.items():
         cider += (None, v)
-        file_name.append(k)
 
-    all_to_all = cider.compute_fast()
-    np.save('cider_test', all_to_all)
-    np.save('filename', file_name)
+    pairwise = cider.compute_fast()
+    np.save(os.path.join(args.out_path, args.dataset+'_cider'), pairwise)

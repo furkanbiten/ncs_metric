@@ -16,3 +16,6 @@ However, if you are pragmatist and just wanna use the code (I feel you!), here i
 After downloading, unzip the file and run `python get_stanford models` and then run `java -Xmx8G -jar spice-1.0.jar ./example.json` to see if it works. 
 This should result in a file called spice_pairwise.csv. 
 
+CHECK IMG_IX = 80, 256 for qualitative example
+
+Negative examples = 54
