@@ -11,7 +11,10 @@ do
     do
       for MODEL in VSEPP SCAN VSRN CVSE;
       do
-        python metric.py --dataset $DATASET --metric $METRIC --recall_type $RECALL --model_name $MODEL
+        for THRESH in 1 2 3;
+        do
+          python metric.py --dataset $DATASET --metric $METRIC --recall_type $RECALL --model_name $MODEL --threshold $THRESH
+        done
       done
     done
   done

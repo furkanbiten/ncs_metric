@@ -15,13 +15,18 @@ from collections import defaultdict
 
 class Metric:
     def __init__(self, args):
-        self.IMG_THRESHOLD = 1
+        self.args = args
+        self.IMG_THRESHOLD = int(args.threshold)
         self.FUNCTION_MAP = {'hard': self.hard, 'soft': self.soft, 'softer': self.softer}
         self.TEXT_PER_IMG = 5
-        self.args = args
 
-        with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
-            self.gt = json.load(fp)
+
+        if args.dataset == 'coco':
+            with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
+                self.gt = json.load(fp)
+        else:
+            with open(os.path.join(args.dataset_path, args.dataset + '_dataset.json')) as fp:
+                self.gt = json.load(fp)
 
         if args.metric == 'spice':
             metric = pd.read_csv(os.path.join(args.metric_path, args.dataset + '_' + args.metric + '.csv'), sep=',',
@@ -125,6 +130,7 @@ class Metric:
                     ranks[ix] = rank
 
             elif args.recall_type == 'recall':
+                # TODO: Copy from Jup-notebook
                 pass
 
         elif modality == 't2i':
@@ -155,7 +161,7 @@ class Metric:
             gt_ranks[ix, :] = self.metric[:, inds_metric[:10]][ix, :]
 
     def compute_metrics(self):
-        print("\n Model name:{},\n "
+        print("\nModel name:{},\n"
               "Dataset: {},\n"
               "Recall Type: {},\n"
               "Metric:{},\n".format(self.args.model_name, self.args.dataset, self.args.recall_type, self.args.metric))
@@ -168,19 +174,27 @@ class Metric:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset_path', type=str, default='./data', help='ground truth data path')
+
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
+
     parser.add_argument('--metric', type=str, default='spice',
                         help='which image captioning metric to use, options are: cider, spice')
-    parser.add_argument('--recall_type', type=str, default='vse_recall', help='Options are recall and vse_recall')
+
+    parser.add_argument('--recall_type', type=str, default='recall', help='Options are recall and vse_recall')
+
     parser.add_argument('--score', default=['hard', 'softer'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
-    parser.add_argument('--model_name', type=str, default='SCAN',
+
+    parser.add_argument('--model_name', type=str, default='VSRN',
                         help='which model to use, options are: VSEPP, SCAN, CVSE, VSRN')
+
+    parser.add_argument('--threshold', type=str, default='1',
+                        help='Threshold of number of relevant samples to compute metrics, options are: 1,2,3')
 
     args = parser.parse_args()
     M = Metric(args)
-    print("Loading Results...\n")
+    print("\n ... LOADING DATA ...\n")
     M.compute_metrics()
 
