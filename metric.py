@@ -1,3 +1,8 @@
+# TODO
+# - Real Recall
+# - Check Cider metric
+# - Add any other relevant metric
+
 import argparse
 import tqdm
 import json
@@ -175,7 +180,7 @@ if __name__ == "__main__":
                         help='which model to use, options are: VSEPP, SCAN, CVSE, VSRN')
 
     args = parser.parse_args()
-
     M = Metric(args)
+    print("Loading Results...\n")
     M.compute_metrics()
 
