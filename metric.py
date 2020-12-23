@@ -1,8 +1,3 @@
-# TODO
-# - Real Recall
-# - Check Cider metric
-# - Add any other relevant metric
-
 import argparse
 import tqdm
 import json
@@ -13,14 +8,14 @@ import pandas as pd
 
 from collections import defaultdict
 
-from pycocoevalcap.cider.cider import CiderScorer
 class Metric:
     def __init__(self, args):
         self.args = args
         self.IMG_THRESHOLD = int(args.threshold)
         self.FUNCTION_MAP = {'hard': self.hard, 'soft': self.soft, 'softer': self.softer}
         self.TEXT_PER_IMG = 5
-
+        self.TOP_K = 10
+        self.RECALL_THRESHOLDS = [1, 5, 10]
 
         if args.dataset == 'coco':
             with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
@@ -104,7 +99,6 @@ class Metric:
             print("Soft score with Recall, R@1: {}, R@5: {}, R@10: {}".format(r1, r5, r10))
 
         elif score_type == 'softer':
-            # for i in [1, 5, 10]:
             r1 = 100.0 * ranks[:, :1].mean(axis=1).mean(axis=0) / (gt_ranks[:, :1].mean(axis=1).mean(axis=0))
             r5 = 100.0 * ranks[:, :5].mean(axis=1).mean(axis=0) / (gt_ranks[:, :5].mean(axis=1).mean(axis=0))
             r10 = 100.0 * ranks[:, :10].mean(axis=1).mean(axis=0) / (gt_ranks[:, :10].mean(axis=1).mean(axis=0))
@@ -124,7 +118,6 @@ class Metric:
         return relevant_indexes
 
     def i2t(self):
-        # ranks = np.zeros((len(args.score), len(self.sims)))
         ranks = self.build_ranks()
         gt_ranks = np.zeros((len(self.sims), 10))
 
@@ -133,9 +126,10 @@ class Metric:
 
             if self.args.include_anns == False:
                 # Remove the index from the similarity
-                # TODO: OPTIMIZE THIS!!!
                 gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
+                # 100x faster
                 inds = inds[~np.isin(inds, gt)]
+                # More readable
                 # inds = np.array([i for i in inds if i not in gt])
 
             for sc in args.score:
@@ -184,13 +178,10 @@ class Metric:
                     tmp = np.where(inds == c[0])[0][0]
                     if tmp < rank:
                         rank = tmp
-                # ranks[ix] = rank
                 ranks.append(rank)
 
             elif args.recall_type == 'recall' and self.IMG_THRESHOLD >= 2:
                 relevant_indexes = self.recall(ix, modality)
-                # relevant_items = self.intersection[ix // self.TEXT_PER_IMG][:self.IMG_THRESHOLD]
-                # relevant_indexes = [item[0] for item in relevant_items]
                 rel = [1 if i in relevant_indexes else 0 for i in inds[:10]]
                 ranks.append(rel)
 
@@ -214,7 +205,6 @@ class Metric:
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
         # TODO: args.include_anns needs to be coded for this part!
         if modality == 'i2t':
-            # ranks[ix, :] = self.metric[inds[:10]][:, ix]
             ranks.append(self.metric[inds[:10]][:, ix])
             # For normalization
             gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
@@ -223,7 +213,6 @@ class Metric:
             gt_ranks[ix, :] = self.metric[inds_metric[:10]][:, ix]
 
         elif modality == 't2i':
-            # ranks[ix, :] = self.metric[:, inds[:10]][ix, :]
             ranks.append(self.metric[:, inds[:10]][ix, :])
             # For normalization
             inds_metric = np.argsort(self.metric[ix, :])[::-1]
