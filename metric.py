@@ -46,7 +46,7 @@ class Metric:
 
     def get_intersection(self):
         self.intersection = []
-        for ix in tqdm.tqdm(range(len(self.sims))):
+        for ix in tqdm.tqdm(range(len(self.sims)), leave=False):
             # GET MOST RELEVANT NON-GROUND TRUTH ITEMS
             intersection = []
             for i in range(self.TEXT_PER_IMG):
@@ -75,7 +75,9 @@ class Metric:
     def calculate_ranks(self, ranks, score_type, gt_ranks=None, modality = 'i2t'):
         ranks = np.array(ranks)
 
+        # TODO: THERE IS A BUG; when IMG_THRESHOLD=1, 'hard', 'recall', 't2i'
         if score_type == 'hard' and args.recall_type == 'recall':
+            # TODO: THERE IS A BUG: We do not include_anns to num_relevant items!!!
             if modality == 'i2t':
                 # This constant is the amount of relevant items
                 num_relevant = self.TEXT_PER_IMG * self.IMG_THRESHOLD
@@ -85,7 +87,6 @@ class Metric:
             r1 = sum([sum(r[:1])/num_relevant for r in ranks])/len(ranks) * 100
             r5 = sum([sum(r[:5])/num_relevant for r in ranks])/len(ranks) * 100
             r10 = sum([sum(r[:10])/num_relevant for r in ranks])/len(ranks) * 100
-
             print("Hard score with Recall, R@1: {}, R@5: {}, R@10: {}".format(r1, r5, r10))
 
         elif score_type == 'hard':
@@ -94,6 +95,14 @@ class Metric:
             r10 = 100.0 * len(np.where(ranks < 10)[0]) / len(ranks)
             print("Hard score, R@1: {}, R@5: {}, R@10: {}".format(r1, r5, r10))
 
+        elif score_type == 'soft':
+
+            r1 = sum([sum(r[:1]) for r in ranks])/len(ranks) * 100
+            r5 = sum([sum(r[:5]) for r in ranks])/len(ranks) * 100
+            r10 = sum([sum(r[:10]) for r in ranks])/len(ranks) * 100
+
+            print("Soft score with Recall, R@1: {}, R@5: {}, R@10: {}".format(r1, r5, r10))
+
         elif score_type == 'softer':
             # for i in [1, 5, 10]:
             r1 = 100.0 * ranks[:, :1].mean(axis=1).mean(axis=0) / (gt_ranks[:, :1].mean(axis=1).mean(axis=0))
@@ -101,12 +110,25 @@ class Metric:
             r10 = 100.0 * ranks[:, :10].mean(axis=1).mean(axis=0) / (gt_ranks[:, :10].mean(axis=1).mean(axis=0))
             print("Softer score, R@1: {}, R@5: {}, R@10: {}".format(r1, r5, r10))
 
+    def recall(self, ix, modality):
+        if modality == 'i2t':
+            relevant_items = self.intersection[ix][:self.IMG_THRESHOLD]
+            relevant_indexes = []
+            for item in relevant_items:
+                relevant_indexes.extend(list(range(item[0] * self.TEXT_PER_IMG,
+                                                   item[0] * self.TEXT_PER_IMG + self.TEXT_PER_IMG)))
+        elif modality == 't2i':
+            relevant_items = self.intersection[ix // self.TEXT_PER_IMG][:self.IMG_THRESHOLD]
+            relevant_indexes = [item[0] for item in relevant_items]
+
+        return relevant_indexes
+
     def i2t(self):
         # ranks = np.zeros((len(args.score), len(self.sims)))
         ranks = self.build_ranks()
         gt_ranks = np.zeros((len(self.sims), 10))
 
-        for ix, sim in enumerate(tqdm.tqdm(self.sims)):
+        for ix, sim in enumerate(tqdm.tqdm(self.sims, leave=False)):
             inds = np.argsort(sim)[::-1]
 
             if self.args.include_anns == False:
@@ -127,7 +149,7 @@ class Metric:
         ranks = self.build_ranks()
         gt_ranks = np.zeros((len(sims), 10))
 
-        for ix, sim in enumerate(tqdm.tqdm(sims)):
+        for ix, sim in enumerate(tqdm.tqdm(sims, leave=False)):
             inds = np.argsort(sim)[::-1]
             if self.args.include_anns == False:
                 inds = inds[~np.isin(inds, [ix // self.TEXT_PER_IMG])]
@@ -151,11 +173,7 @@ class Metric:
                 ranks.append(rank)
 
             elif args.recall_type == 'recall':
-                relevant_items = self.intersection[ix][:self.IMG_THRESHOLD]
-                relevant_indexes = []
-                for item in relevant_items:
-                    relevant_indexes.extend(list(range(item[0]*self.TEXT_PER_IMG,
-                                                       item[0]*self.TEXT_PER_IMG+self.TEXT_PER_IMG)))
+                relevant_indexes = self.recall(ix, modality)
                 rel = [1 if i in relevant_indexes else 0 for i in inds[:10]]
                 ranks.append(rel)
 
@@ -170,21 +188,31 @@ class Metric:
                 ranks.append(rank)
 
             elif args.recall_type == 'recall' and self.IMG_THRESHOLD >= 2:
-                relevant_items = self.intersection[ix // self.TEXT_PER_IMG][:self.IMG_THRESHOLD]
-                relevant_indexes = [item[0] for item in relevant_items]
-                # for item in relevant_items:
-                #     relevant_indexes.extend(list(range(item[0]*self.TEXT_PER_IMG,
-                #                                        item[0]*self.TEXT_PER_IMG+self.TEXT_PER_IMG)))
+                relevant_indexes = self.recall(ix, modality)
+                # relevant_items = self.intersection[ix // self.TEXT_PER_IMG][:self.IMG_THRESHOLD]
+                # relevant_indexes = [item[0] for item in relevant_items]
                 rel = [1 if i in relevant_indexes else 0 for i in inds[:10]]
                 ranks.append(rel)
 
     def soft(self, ix, inds, ranks, modality='i2t', gt=None):
+
+        relevant_indexes = self.recall(ix, modality)
+
         if modality == 'i2t':
-            pass
+            # TODO: Check if correct
+            constant = sum(self.metric[relevant_indexes, ix]) + 1e-20
+            rel = [self.metric[i, ix]/constant if i in relevant_indexes else 0 for i in inds[:10]]
+            # rel = [self.metric[i, ix] if i in relevant_indexes else 0 for i in inds[:10]]
+            ranks.append(rel)
+
         elif modality == 't2i':
-            pass
+            constant = sum(self.metric[ix, relevant_indexes]) + 1e-20
+            rel = [self.metric[ix, i] / constant if i in relevant_indexes else 0 for i in inds[:10]]
+            # rel = [self.metric[ix, i] if i in relevant_indexes else 0 for i in inds[:10]]
+            ranks.append(rel)
 
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
+        # TODO: args.include_anns needs to be coded for this part!
         if modality == 'i2t':
             # ranks[ix, :] = self.metric[inds[:10]][:, ix]
             ranks.append(self.metric[inds[:10]][:, ix])
@@ -219,20 +247,20 @@ if __name__ == "__main__":
 
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
 
     parser.add_argument('--metric', type=str, default='spice',
                         help='which image captioning metric to use, options are: cider, spice')
 
-    parser.add_argument('--recall_type', type=str, default='vse_recall', help='Options are recall and vse_recall')
+    parser.add_argument('--recall_type', type=str, default='recall', help='Options are recall and vse_recall')
 
-    parser.add_argument('--score', default=['hard'], nargs="+",
+    parser.add_argument('--score', default=['soft'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
 
     parser.add_argument('--model_name', type=str, default='VSRN',
                         help='which model to use, options are: VSEPP, SCAN, VSRN, CVSE')
 
-    parser.add_argument('--threshold', type=int, default=3,
+    parser.add_argument('--threshold', type=int, default=1,
                         help='Threshold of number of relevant samples to compute metrics, options are: 1,2,3')
 
     parser.add_argument('--include_anns', type=bool, default=False,
