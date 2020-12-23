@@ -13,6 +13,7 @@ import pandas as pd
 
 from collections import defaultdict
 
+from pycocoevalcap.cider.cider import CiderScorer
 class Metric:
     def __init__(self, args):
         self.args = args
@@ -112,7 +113,8 @@ class Metric:
                 # Remove the index from the similarity
                 # TODO: OPTIMIZE THIS!!!
                 gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
-                inds = np.array([i for i in inds if i not in gt])
+                inds = inds[~np.isin(inds, gt)]
+                # inds = np.array([i for i in inds if i not in gt])
 
             for sc in args.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 'i2t', gt_ranks)
@@ -128,7 +130,8 @@ class Metric:
         for ix, sim in enumerate(tqdm.tqdm(sims)):
             inds = np.argsort(sim)[::-1]
             if self.args.include_anns == False:
-                inds = np.array([i for i in inds if i != ix // self.TEXT_PER_IMG])
+                inds = inds[~np.isin(inds, [ix // self.TEXT_PER_IMG])]
+                # inds = np.array([i for i in inds if i != ix // self.TEXT_PER_IMG])
             for sc in args.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 't2i', gt_ranks)
 
@@ -216,7 +219,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
 
     parser.add_argument('--metric', type=str, default='spice',
                         help='which image captioning metric to use, options are: cider, spice')
