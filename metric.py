@@ -146,9 +146,9 @@ class Metric:
 
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
         if modality == 'i2t':
-            gt = list(range(5 * ix, 5 * ix + 5, 1))
             ranks[ix, :] = self.metric[inds[:10]][:, ix]
             # For normalization
+            gt = list(range(5 * ix, 5 * ix + 5, 1))
             inds_metric = np.argsort(self.metric[:, ix])[::-1]
             inds_metric = np.array([i for i in inds_metric if i not in gt])
             gt_ranks[ix, :] = self.metric[inds_metric[:10]][:, ix]
