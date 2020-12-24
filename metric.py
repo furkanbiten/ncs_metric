@@ -67,12 +67,10 @@ class Metric:
             ranks[sc] = []
         return ranks
 
-    def calculate_ranks(self, ranks, score_type, gt_ranks=None, modality = 'i2t'):
+    def calculate_ranks(self, ranks, score_type, gt_ranks=None, modality='i2t'):
         ranks = np.array(ranks)
-
         # TODO: THERE IS A BUG; when IMG_THRESHOLD=1, 'hard', 'recall', 't2i'
-        if score_type == 'hard' and args.recall_type == 'recall':
-            # TODO: THERE IS A BUG: We do not include_anns to num_relevant items!!!
+        if score_type == 'hard' and args.recall_type == 'recall' and len(ranks.shape)>1:
             if modality == 'i2t':
                 # This constant is the amount of relevant items
                 num_relevant = self.TEXT_PER_IMG * self.IMG_THRESHOLD
@@ -209,14 +207,18 @@ class Metric:
             # For normalization
             gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
             inds_metric = np.argsort(self.metric[:, ix])[::-1]
-            inds_metric = np.array([i for i in inds_metric if i not in gt])
+            if args.include_anns == False:
+                inds_metric = inds_metric[~np.isin(inds_metric, gt)]
+                # inds_metric = np.array([i for i in inds_metric if i not in gt])
             gt_ranks[ix, :] = self.metric[inds_metric[:10]][:, ix]
 
         elif modality == 't2i':
             ranks.append(self.metric[:, inds[:10]][ix, :])
             # For normalization
             inds_metric = np.argsort(self.metric[ix, :])[::-1]
-            inds_metric = np.array([i for i in inds_metric if i !=ix//self.TEXT_PER_IMG])
+            if args.include_anns == False:
+                inds_metric = inds_metric[~np.isin(inds_metric, [ix // self.TEXT_PER_IMG])]
+                # inds_metric = np.array([i for i in inds_metric if i !=ix//self.TEXT_PER_IMG])
             gt_ranks[ix, :] = self.metric[:, inds_metric[:10]][ix, :]
 
     def compute_metrics(self):
@@ -243,7 +245,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--recall_type', type=str, default='recall', help='Options are recall and vse_recall')
 
-    parser.add_argument('--score', default=['soft'], nargs="+",
+    parser.add_argument('--score', default=['softer'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
 
     parser.add_argument('--model_name', type=str, default='VSRN',
@@ -252,7 +254,7 @@ if __name__ == "__main__":
     parser.add_argument('--threshold', type=int, default=1,
                         help='Threshold of number of relevant samples to compute metrics, options are: 1,2,3')
 
-    parser.add_argument('--include_anns', type=bool, default=False,
+    parser.add_argument('--include_anns', type=bool, default=True,
                         help='Include human annotations to define relevant items, options are: True, False')
 
 
