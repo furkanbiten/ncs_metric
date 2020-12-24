@@ -57,7 +57,7 @@ class Metric:
 
             new_count = sorted(count.items(), key=lambda x: x[1], reverse=True)
             pop_ix = [i for i, j in enumerate(new_count) if j[0] == ix][0]
-            if self.args.include_anns == False:
+            if not self.args.include_anns:
                 new_count.pop(pop_ix)
             self.intersection.append(new_count)
 
@@ -122,7 +122,7 @@ class Metric:
         for ix, sim in enumerate(tqdm.tqdm(self.sims, leave=False)):
             inds = np.argsort(sim)[::-1]
 
-            if self.args.include_anns == False:
+            if not self.args.include_anns:
                 # Remove the index from the similarity
                 gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
                 # 100x faster
@@ -143,7 +143,7 @@ class Metric:
 
         for ix, sim in enumerate(tqdm.tqdm(sims, leave=False)):
             inds = np.argsort(sim)[::-1]
-            if self.args.include_anns == False:
+            if not self.args.include_anns:
                 inds = inds[~np.isin(inds, [ix // self.TEXT_PER_IMG])]
                 # inds = np.array([i for i in inds if i != ix // self.TEXT_PER_IMG])
             for sc in args.score:
@@ -201,13 +201,12 @@ class Metric:
             ranks.append(rel)
 
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
-        # TODO: args.include_anns needs to be coded for this part!
         if modality == 'i2t':
             ranks.append(self.metric[inds[:10]][:, ix])
             # For normalization
             gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
             inds_metric = np.argsort(self.metric[:, ix])[::-1]
-            if args.include_anns == False:
+            if not self.args.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, gt)]
                 # inds_metric = np.array([i for i in inds_metric if i not in gt])
             gt_ranks[ix, :] = self.metric[inds_metric[:10]][:, ix]
@@ -216,7 +215,7 @@ class Metric:
             ranks.append(self.metric[:, inds[:10]][ix, :])
             # For normalization
             inds_metric = np.argsort(self.metric[ix, :])[::-1]
-            if args.include_anns == False:
+            if not self.args.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, [ix // self.TEXT_PER_IMG])]
                 # inds_metric = np.array([i for i in inds_metric if i !=ix//self.TEXT_PER_IMG])
             gt_ranks[ix, :] = self.metric[:, inds_metric[:10]][ix, :]
