@@ -68,6 +68,7 @@ class Metric:
 
     def calculate_ranks(self, ranks, score_type, gt_ranks=None, modality='i2t'):
         ranks = np.array(ranks)
+        scores = {}
         print_str = "{} score with {}".format(score_type.capitalize(), self.recall_type.capitalize())
         # TODO: THERE IS A BUG; when IMG_THRESHOLD=1, 'hard', 'recall', 't2i'
         if score_type == 'hard' and self.recall_type == 'recall' and len(ranks.shape) > 1:
@@ -79,25 +80,30 @@ class Metric:
 
             for thr in self.RECALL_THRESHOLDS:
                 r_at_thr = sum([sum(r[:thr]) / num_relevant for r in ranks]) / len(ranks) * 100
+                scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         elif score_type == 'hard':
             for thr in self.RECALL_THRESHOLDS:
                 r_at_thr = 100.0 * len(np.where(ranks < thr)[0]) / len(ranks)
+                scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         elif score_type == 'soft':
             for thr in self.RECALL_THRESHOLDS:
                 r_at_thr = sum([sum(r[:thr]) for r in ranks]) / len(ranks) * 100
+                scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         elif score_type == 'softer':
             for thr in self.RECALL_THRESHOLDS:
                 r_at_thr = 100.0 * ranks[:, :thr].mean(axis=1).mean(axis=0) / (
                     gt_ranks[:, :thr].mean(axis=1).mean(axis=0))
+                scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         print(print_str)
+        return scores
 
     def recall(self, ix, modality):
         if modality == 'i2t':
@@ -130,8 +136,11 @@ class Metric:
             for sc in args.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 'i2t', gt_ranks)
 
+        scores = {}
         for sc in args.score:
-            self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='i2t')
+            scores[sc] = self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='i2t')
+
+        return scores
 
     def t2i(self):
         sims = np.array(self.sims).T
@@ -146,8 +155,11 @@ class Metric:
             for sc in args.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 't2i', gt_ranks)
 
+        scores = {}
         for sc in args.score:
-            self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='t2i')
+            scores[sc] = self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='t2i')
+
+        return scores
 
     def hard(self, ix, inds, ranks, modality='i2t', gt=None):
         if modality == 'i2t':
@@ -223,10 +235,11 @@ class Metric:
               "Recall Type: {},\n"
               "Metric:{},\n".format(self.model_name, self.dataset, self.recall_type, self.metric_name))
         print("####I2T#####")
-        self.i2t()
+        scores_i2t = self.i2t()
         print("####T2I#####")
-        self.t2i()
+        scores_t2i = self.t2i()
 
+        return {'i2t': scores_i2t, 't2i': scores_t2i}
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -279,4 +292,5 @@ if __name__ == "__main__":
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
                include_anns=args.include_anns, model_name=args.model_name)
     print("\n ... LOADING DATA ...\n")
-    M.compute_metrics()
+    scores = M.compute_metrics()
+    print(scores)
