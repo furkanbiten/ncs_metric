@@ -1,6 +1,7 @@
 import json
 import argparse
 import os
+import numpy as np
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -8,21 +9,32 @@ if __name__ == "__main__":
     parser.add_argument('--out', default='./data')
     args = parser.parse_args()
 
-    datasets = ['coco', 'f30k']
+    datasets = ['f30k', 'coco']
     splits = ['dev', 'test']
 
     for dataset in datasets:
         for split in splits:
 
+            # Get the captions
             caps = []
             PATH = os.path.join(args.root, dataset, split+'_caps.txt')
             with open(PATH, 'r') as f:
                 for i in f.readlines():
                     caps.append(i.split('\n')[0])
 
-            json = []
-            for ix, cap in enumerate(zip(*[iter(caps)] * 5)):
-                json.append({'image_id': ix, 'refs': list(cap), 'test': ''})
+            if split=='dev' and dataset == 'f30k':
+                caps = caps[:5000]
 
-            OUT_PATH = os.path.join
-            json.dump(flickr_json, open('./data/flickr_test.json', 'w'))
+            # Get the ids
+            ids = []
+            PATH = os.path.join(args.root, dataset, split+'_ids.txt')
+            with open(PATH, 'r') as f:
+                for i in f.readlines():
+                    ids.append(i.split('\n')[0])
+
+            caps_json = []
+            for ix, cap in enumerate(zip(*[iter(caps)] * 5)):
+                caps_json.append({'image_id': ids[ix*5], 'refs': list(cap), 'test': ''})
+
+            OUT_PATH = os.path.join(args.out, dataset+'_'+split+'.json')
+            json.dump(caps_json, open(OUT_PATH, 'w'))

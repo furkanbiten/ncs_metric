@@ -270,21 +270,11 @@ class CiderScorer(object):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path', type=str, default='./data')
-    parser.add_argument('--dataset', type=str, default='flickr')
+    parser.add_argument('--dataset', type=str, default='f30k')
     parser.add_argument('--out_path', type=str, default='./out')
+    parser.add_argument('--split', type=str, default='dev', help='options are: dev and test')
     args = parser.parse_args()
-    captions = json.load(open(os.path.join(args.root_path, args.dataset+'_test.json'), 'r'))
-    # processed = json.load(open('../RelationalAxioms/data/MSCOCO/dataset_coco.json'))
-    # karpathy_test = [p['imgid'] for p in processed['images'] if p['split'] == 'test']
-    # captions = {}
-    # for elm in processed['images']:
-    #     if elm['split'] == 'test':
-    #         temp = [sent['raw'].lower() for sent in elm['sentences']]
-    #
-    #         captions[elm['filename']] = temp[:5]
-
-    # hypo = {0:[captions[0]]}
-    # ref = {0: captions[:5]}
+    captions = json.load(open(os.path.join(args.root_path, args.dataset+'_'+args.split+'.json'), 'r'))
     captions = {cap['image_id']: [c.lower() for c in cap['refs']] for cap in captions}
     cider = CiderScorer()
 
@@ -292,4 +282,4 @@ if __name__ == "__main__":
         cider += (None, v)
 
     pairwise = cider.compute_fast()
-    np.save(os.path.join(args.out_path, args.dataset+'_cider'), pairwise)
+    np.save(os.path.join(args.out_path, args.dataset+'_'+args.split+'_cider'), pairwise)

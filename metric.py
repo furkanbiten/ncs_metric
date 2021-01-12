@@ -132,11 +132,11 @@ class Metric:
                 # More readable
                 # inds = np.array([i for i in inds if i not in gt])
 
-            for sc in args.score:
+            for sc in self.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 'i2t', gt_ranks)
 
         scores = {}
-        for sc in args.score:
+        for sc in self.score:
             scores[sc] = self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='i2t')
 
         return scores
@@ -151,18 +151,18 @@ class Metric:
             if not self.include_anns:
                 inds = inds[~np.isin(inds, [ix // self.TEXT_PER_IMG])]
                 # inds = np.array([i for i in inds if i != ix // self.TEXT_PER_IMG])
-            for sc in args.score:
+            for sc in self.score:
                 self.FUNCTION_MAP[sc](ix, inds, ranks[sc], 't2i', gt_ranks)
 
         scores = {}
-        for sc in args.score:
+        for sc in self.score:
             scores[sc] = self.calculate_ranks(ranks[sc], sc, gt_ranks, modality='t2i')
 
         return scores
 
     def hard(self, ix, inds, ranks, modality='i2t', gt=None):
         if modality == 'i2t':
-            if args.recall_type == 'vse_recall':
+            if self.recall_type == 'vse_recall':
                 rank = 1e20
                 for c in self.intersection[ix][:self.IMG_THRESHOLD]:
                     for i in range(self.TEXT_PER_IMG * c[0], self.TEXT_PER_IMG * c[0] + self.TEXT_PER_IMG, 1):
@@ -172,13 +172,13 @@ class Metric:
 
                 ranks.append(rank)
 
-            elif args.recall_type == 'recall':
+            elif self.recall_type == 'recall':
                 relevant_indexes = self.recall(ix, modality)
                 rel = [1 if i in relevant_indexes else 0 for i in inds[:self.TOP_K]]
                 ranks.append(rel)
 
         elif modality == 't2i':
-            if args.recall_type == 'vse_recall' or self.IMG_THRESHOLD == 1:
+            if self.recall_type == 'vse_recall' or self.IMG_THRESHOLD == 1:
                 rank = 1e20
                 for c in self.intersection[ix // self.TEXT_PER_IMG][:self.IMG_THRESHOLD]:
                     tmp = np.where(inds == c[0])[0][0]
@@ -186,7 +186,7 @@ class Metric:
                         rank = tmp
                 ranks.append(rank)
 
-            elif args.recall_type == 'recall' and self.IMG_THRESHOLD >= 2:
+            elif self.recall_type == 'recall' and self.IMG_THRESHOLD >= 2:
                 relevant_indexes = self.recall(ix, modality)
                 rel = [1 if i in relevant_indexes else 0 for i in inds[:self.TOP_K]]
                 ranks.append(rel)
