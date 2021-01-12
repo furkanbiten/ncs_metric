@@ -10,7 +10,7 @@ from collections import defaultdict
 
 
 class Metric:
-    def __init__(self, metric, gt, sims, recall_type, score, metric_name, recall_thresholds=[1,5,10], threshold=1,
+    def __init__(self, metric, sims, recall_type, score, metric_name, recall_thresholds=[1,5,10], threshold=1,
                  dataset='coco', include_anns=False, model_name='None'):
 
         assert(type(score) is list)
@@ -24,7 +24,6 @@ class Metric:
 
         self.metric_name = metric_name
         self.metric = metric
-        self.gt = gt
         self.sims = sims
         self.dataset = dataset
         self.include_anns = include_anns
@@ -268,12 +267,12 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    if args.dataset == 'coco':
-        with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
-            gt = json.load(fp)
-    else:
-        with open(os.path.join(args.dataset_path, args.dataset + '_dataset.json')) as fp:
-            gt = json.load(fp)
+    # if args.dataset == 'coco':
+    #     with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
+    #         gt = json.load(fp)
+    # else:
+    #     with open(os.path.join(args.dataset_path, args.dataset + '_dataset.json')) as fp:
+    #         gt = json.load(fp)
 
     if args.metric_name == 'spice':
         metric = pd.read_csv(os.path.join(args.metric_path, args.dataset + '_' + args.metric_name + '.csv'), sep=',',
@@ -288,7 +287,7 @@ if __name__ == "__main__":
     filename = os.path.join(args.metric_path, 'sims_' + args.model_name + '_' + args.dataset + '_precomp.json')
     sims = json.load(open(filename, 'r'))
 
-    M = Metric(metric, gt, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
+    M = Metric(metric, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
                include_anns=args.include_anns, model_name=args.model_name)
     print("\n ... LOADING DATA ...\n")
