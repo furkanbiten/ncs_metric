@@ -213,29 +213,28 @@ class Metric:
 
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
         if modality == 'i2t':
-            # ranks.append(self.metric[inds[:self.TOP_K]][:, ix])
-            # ranks.append([sum(self.metric[inds[:thr]][:, ix]) for thr in self.RECALL_THRESHOLDS])
-            ranks[ix, :] = self.metric[inds[:self.TOP_K]][:, ix]
+            # ranks[ix, :] = self.metric[inds[:self.TOP_K]][:, ix]
+            ranks[ix, :] = self.metric[inds[:self.TOP_K], ix]
             # For normalization
             gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
             inds_metric = np.argsort(self.metric[:, ix])[::-1]
             if not self.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, gt)]
                 # inds_metric = np.array([i for i in inds_metric if i not in gt])
-            # gt_ranks[ix, :] = [sum(self.metric[inds_metric[:thr]][:, ix]) for thr in self.RECALL_THRESHOLDS]
-            gt_ranks[ix, :] = self.metric[inds_metric[:self.TOP_K]][:, ix]
+            # gt_ranks[ix, :] = self.metric[inds_metric[:self.TOP_K]][:, ix]
+            gt_ranks[ix, :] = self.metric[inds_metric[:self.TOP_K], ix]
 
         elif modality == 't2i':
-            # ranks.append(self.metric[:, inds[:self.TOP_K]][ix, :])
-            # ranks.append([sum(self.metric[:, inds[:thr]][ix, :]) for thr in self.RECALL_THRESHOLDS])
-            ranks[ix, :] = self.metric[:, inds[:self.TOP_K]][ix, :]
+            # Top is 60 times slower!
+            # ranks[ix, :] = self.metric[:, inds[:self.TOP_K]][ix, :]
+            ranks[ix, :] = self.metric[ix, inds[:self.TOP_K]]
             # For normalization
             inds_metric = np.argsort(self.metric[ix, :])[::-1]
             if not self.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, [ix // self.TEXT_PER_IMG])]
                 # inds_metric = np.array([i for i in inds_metric if i !=ix//self.TEXT_PER_IMG])
-            gt_ranks[ix, :] = self.metric[:, inds_metric[:self.TOP_K]][ix, :]
-            # gt_ranks[ix, :] = [sum(self.metric[:, inds_metric[:thr]][ix, :]) for thr in self.RECALL_THRESHOLDS]
+            # gt_ranks[ix, :] = self.metric[:, inds_metric[:self.TOP_K]][ix, :]
+            gt_ranks[ix, :] = self.metric[ix, inds_metric[:self.TOP_K]]
 
     def compute_metrics(self):
         print("\nModel name:{},\n"
@@ -271,7 +270,7 @@ if __name__ == "__main__":
     parser.add_argument('--threshold', type=int, default=1,
                         help='Threshold of number of relevant samples to compute metrics, options are: 1,2,3')
     parser.add_argument('--recall_thresholds', default=[1, 5, 10, 20, 30], nargs="+", help='K values in Recall_at_K')
-    parser.add_argument('--include_anns', type=bool, default=True,
+    parser.add_argument('--include_anns', type=bool, default=False,
                         help='Include human annotations to define relevant items, options are: True, False')
 
     args = parser.parse_args()
