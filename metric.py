@@ -59,10 +59,13 @@ class Metric:
                 new_count.pop(pop_ix)
             self.intersection.append(new_count)
 
-    def build_ranks(self):
+    def build_ranks(self , sims):
         ranks = {}
         for sc in self.score:
-            ranks[sc] = []
+            if sc == 'softer':
+                ranks[sc] = np.zeros((len(sims), self.TOP_K))
+            else:
+                ranks[sc] = []
         return ranks
 
     def calculate_ranks(self, ranks, score_type, gt_ranks=None, modality='i2t'):
@@ -95,7 +98,7 @@ class Metric:
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         elif score_type == 'softer':
-            for thr in self.RECALL_THRESHOLDS:
+            for ix, thr in enumerate(self.RECALL_THRESHOLDS):
                 r_at_thr = 100.0 * ranks[:, :thr].mean(axis=1).mean(axis=0) / (
                     gt_ranks[:, :thr].mean(axis=1).mean(axis=0))
                 scores[thr] = r_at_thr
@@ -118,7 +121,7 @@ class Metric:
         return relevant_indexes
 
     def i2t(self):
-        ranks = self.build_ranks()
+        ranks = self.build_ranks(sims)
         gt_ranks = np.zeros((len(self.sims), self.TOP_K))
 
         for ix, sim in enumerate(tqdm.tqdm(self.sims, leave=False)):
@@ -143,7 +146,7 @@ class Metric:
 
     def t2i(self):
         sims = np.array(self.sims).T
-        ranks = self.build_ranks()
+        ranks = self.build_ranks(sims)
         gt_ranks = np.zeros((len(sims), self.TOP_K))
 
         for ix, sim in enumerate(tqdm.tqdm(sims, leave=False)):
@@ -210,23 +213,29 @@ class Metric:
 
     def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
         if modality == 'i2t':
-            ranks.append(self.metric[inds[:self.TOP_K]][:, ix])
+            # ranks.append(self.metric[inds[:self.TOP_K]][:, ix])
+            # ranks.append([sum(self.metric[inds[:thr]][:, ix]) for thr in self.RECALL_THRESHOLDS])
+            ranks[ix, :] = self.metric[inds[:self.TOP_K]][:, ix]
             # For normalization
             gt = list(range(self.TEXT_PER_IMG * ix, self.TEXT_PER_IMG * ix + self.TEXT_PER_IMG, 1))
             inds_metric = np.argsort(self.metric[:, ix])[::-1]
             if not self.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, gt)]
                 # inds_metric = np.array([i for i in inds_metric if i not in gt])
+            # gt_ranks[ix, :] = [sum(self.metric[inds_metric[:thr]][:, ix]) for thr in self.RECALL_THRESHOLDS]
             gt_ranks[ix, :] = self.metric[inds_metric[:self.TOP_K]][:, ix]
 
         elif modality == 't2i':
-            ranks.append(self.metric[:, inds[:self.TOP_K]][ix, :])
+            # ranks.append(self.metric[:, inds[:self.TOP_K]][ix, :])
+            # ranks.append([sum(self.metric[:, inds[:thr]][ix, :]) for thr in self.RECALL_THRESHOLDS])
+            ranks[ix, :] = self.metric[:, inds[:self.TOP_K]][ix, :]
             # For normalization
             inds_metric = np.argsort(self.metric[ix, :])[::-1]
             if not self.include_anns:
                 inds_metric = inds_metric[~np.isin(inds_metric, [ix // self.TEXT_PER_IMG])]
                 # inds_metric = np.array([i for i in inds_metric if i !=ix//self.TEXT_PER_IMG])
             gt_ranks[ix, :] = self.metric[:, inds_metric[:self.TOP_K]][ix, :]
+            # gt_ranks[ix, :] = [sum(self.metric[:, inds_metric[:thr]][ix, :]) for thr in self.RECALL_THRESHOLDS]
 
     def compute_metrics(self):
         print("\nModel name:{},\n"
@@ -246,14 +255,14 @@ if __name__ == "__main__":
 
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
 
-    parser.add_argument('--metric_name', type=str, default='spice',
+    parser.add_argument('--metric_name', type=str, default='cider',
                         help='which image captioning metric to use, options are: cider, spice')
 
     parser.add_argument('--recall_type', type=str, default='vse_recall', help='Options are recall and vse_recall')
 
-    parser.add_argument('--score', default=['soft'], nargs="+",
+    parser.add_argument('--score', default=['softer'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
 
     parser.add_argument('--model_name', type=str, default='VSRN',
@@ -292,4 +301,3 @@ if __name__ == "__main__":
                include_anns=args.include_anns, model_name=args.model_name)
     print("\n ... LOADING DATA ...\n")
     scores = M.compute_metrics()
-    print(scores)
