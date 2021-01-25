@@ -12,7 +12,7 @@ if __name__ == "__main__":
 
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
 
     parser.add_argument('--metric_name', type=str, default='cider',
                         help='which image captioning metric to use, options are: cider, spice')
@@ -28,8 +28,8 @@ if __name__ == "__main__":
     parser.add_argument('--threshold', type=int, default=1,
                         help='Threshold of number of relevant samples to compute metrics, options are: 1,2,3')
     parser.add_argument('--recall_thresholds', default=[1, 5, 10, 20, 30], nargs="+", help='K values in Recall_at_K')
-    parser.add_argument('--include_anns', type=bool, default=False,
-                        help='Include human annotations to define relevant items, options are: True, False')
+    parser.add_argument('--include_anns', action='store_true',
+                        help='Include human annotations to define relevant items')
 
     args = parser.parse_args()
 
