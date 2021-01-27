@@ -81,7 +81,7 @@ class Metric:
                 num_relevant = self.IMG_THRESHOLD
 
             for thr in self.RECALL_THRESHOLDS:
-                r_at_thr = sum([sum(r[:thr]) / num_relevant for r in ranks]) / len(ranks) * 100
+                r_at_thr = 100.0 * sum([sum(r[:thr]) / num_relevant for r in ranks]) / len(ranks)
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
@@ -93,7 +93,7 @@ class Metric:
 
         elif score_type == 'soft':
             for thr in self.RECALL_THRESHOLDS:
-                r_at_thr = sum([sum(r[:thr]) for r in ranks]) / len(ranks) * 100
+                r_at_thr = 100.0 * sum([sum(r[:thr]) for r in ranks]) / len(ranks)
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
