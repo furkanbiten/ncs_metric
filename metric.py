@@ -73,13 +73,16 @@ class Metric:
         scores = {}
         print_str = "{} score with {}".format(score_type.capitalize(), self.recall_type.capitalize())
         # TODO: THERE IS A BUG; when IMG_THRESHOLD=1, 'hard', 'recall', 't2i'
-        if score_type == 'hard' and self.recall_type == 'recall' and len(ranks.shape) > 1:
-            if modality == 'i2t':
-                # This constant is the amount of relevant items
-                num_relevant = self.TEXT_PER_IMG * self.IMG_THRESHOLD
-            if modality == 't2i':
-                num_relevant = self.IMG_THRESHOLD
 
+        # Define the relevant items for real recall
+        if modality == 'i2t':
+            # This constant is the amount of relevant items
+            num_relevant = self.TEXT_PER_IMG * self.IMG_THRESHOLD
+        elif modality == 't2i':
+            num_relevant = self.IMG_THRESHOLD
+
+        # Start calculating according to score_type
+        if score_type == 'hard' and self.recall_type == 'recall' and len(ranks.shape) > 1:
             for thr in self.RECALL_THRESHOLDS:
                 r_at_thr = 100.0 * sum([sum(r[:thr]) / num_relevant for r in ranks]) / len(ranks)
                 scores[thr] = r_at_thr
@@ -93,7 +96,7 @@ class Metric:
 
         elif score_type == 'soft':
             for thr in self.RECALL_THRESHOLDS:
-                r_at_thr = 100.0 * sum([sum(r[:thr]) for r in ranks]) / len(ranks)
+                r_at_thr = 100.0 * sum([sum(r[:thr])/num_relevant for r in ranks]) / len(ranks)
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
@@ -109,6 +112,7 @@ class Metric:
 
     def recall(self, ix, modality):
         if modality == 'i2t':
+            # TODO: Can be optimized
             relevant_items = self.intersection[ix][:self.IMG_THRESHOLD]
             relevant_indexes = []
             for item in relevant_items:
