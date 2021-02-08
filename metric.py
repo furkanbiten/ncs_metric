@@ -2,6 +2,7 @@ import argparse
 import tqdm
 import json
 import os
+import math
 
 import numpy as np
 import pandas as pd
@@ -101,12 +102,27 @@ class Metric:
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
         elif score_type == 'softer':
+            scores['softer_order'] = {}
             for ix, thr in enumerate(self.RECALL_THRESHOLDS):
-                r_at_thr = 100.0 * ranks[:, :thr].mean(axis=1).mean(axis=0) / (
-                    gt_ranks[:, :thr].mean(axis=1).mean(axis=0))
+                # r_at_thr = 100.0 * ranks[:, :thr].mean(axis=1).mean(axis=0) / (
+                #     gt_ranks[:, :thr].mean(axis=1).mean(axis=0))
+                r_at_thr = [ranks[i, :thr].mean() / (gt_ranks[i, :thr].mean() + 1e-10) for i in range(gt_ranks.shape[0])]
+                r_at_thr = 100 * np.array(r_at_thr).mean(axis=0)
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
+                # For calculation of softer score with taken into account the order of the element
+                r_at_thr_order = np.array([[elm * math.log(thr - ix + 1, 2) for ix, elm in enumerate(r)]
+                                           for r in ranks[:, :thr]])
+                gt_ranks_at_thr_order = np.array([[elm*math.log(thr-ix+1, 2) for ix, elm in enumerate(r)]
+                                                  for r in gt_ranks[:, :thr]])
+
+                softer_order_score = [ret.mean()/(gt.mean()+1e-10)
+                                                       for ret, gt in zip(r_at_thr_order, gt_ranks_at_thr_order)]
+                softer_order_score = np.array(softer_order_score).mean()
+                scores['softer_order'][thr] = 100.0 * softer_order_score
+
+            print("Softer order score with {}:".format(self.recall_type.capitalize())+ ' '.join([" R@{}: {}".format(thr, sc) for thr, sc in scores['softer_order'].items()]))
         print(print_str)
         return scores
 
