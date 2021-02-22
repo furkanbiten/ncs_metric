@@ -13,7 +13,7 @@ if __name__ == "__main__":
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
     parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
-    parser.add_argument('--split', type=str, default='test',
+    parser.add_argument('--split', type=str, default='testall',
                         help='Choose to evaluate on coco 1k test set or 5k test set. (test | testall)')
 
     parser.add_argument('--metric_name', type=str, default='spice',
@@ -54,7 +54,9 @@ if __name__ == "__main__":
     sims = json.load(open(filename, 'r'))
 
     if len(sims) == 1000 and args.dataset == 'coco' and args.split == 'testall':
-        raise ValueError('You cant have coco with 1k and testall option together')
+        raise ValueError('You cant have coco 1k and testall option together')
+    if len(sims) == 5000 and args.dataset == 'coco' and args.split == 'test':
+        raise ValueError('You cant have coco 5k and test option together')
 
     M = Metric(metric, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
