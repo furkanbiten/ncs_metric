@@ -270,7 +270,7 @@ class CiderScorer(object):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--root_path', type=str, default='./data')
-    parser.add_argument('--dataset', type=str, default='f30k')
+    parser.add_argument('--dataset', type=str, default='coco')
     parser.add_argument('--out_path', type=str, default='./out')
     parser.add_argument('--split', type=str, default='dev', help='options are: dev and test')
     args = parser.parse_args()

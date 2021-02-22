@@ -226,6 +226,7 @@ class Metric:
             ranks.append(rel)
 
         elif modality == 't2i':
+            # This is the same with Hard metric on Threshold = 1
             constant = sum(self.metric[ix, relevant_indexes]) + 1e-20
             rel = [self.metric[ix, i] / constant if i in relevant_indexes else 0 for i in inds[:self.TOP_K]]
             # rel = [self.metric[ix, i] if i in relevant_indexes else 0 for i in inds[:10]]

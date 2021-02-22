@@ -13,16 +13,18 @@ if __name__ == "__main__":
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
     parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--split', type=str, default='test',
+                        help='Choose to evaluate on coco 1k test set or 5k test set. (test | testall)')
 
-    parser.add_argument('--metric_name', type=str, default='cider',
+    parser.add_argument('--metric_name', type=str, default='spice',
                         help='which image captioning metric to use, options are: cider, spice')
 
-    parser.add_argument('--recall_type', type=str, default='vse_recall', help='Options are recall and vse_recall')
+    parser.add_argument('--recall_type', type=str, default='recall', help='Options are recall and vse_recall')
 
     parser.add_argument('--score', default=['hard', 'soft', 'softer'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
 
-    parser.add_argument('--model_name', type=str, default='VSRN',
+    parser.add_argument('--model_name', type=str, default='VSRN_cider',
                         help='which model to use, options are: VSEPP, SCAN, VSRN, CVSE')
 
     parser.add_argument('--threshold', type=int, default=1,
@@ -32,13 +34,6 @@ if __name__ == "__main__":
                         help='Include human annotations to define relevant items')
 
     args = parser.parse_args()
-
-    # if args.dataset == 'coco':
-    #     with open(os.path.join(args.dataset_path, args.dataset + '_test.json')) as fp:
-    #         gt = json.load(fp)
-    # else:
-    #     with open(os.path.join(args.dataset_path, args.dataset + '_dataset.json')) as fp:
-    #         gt = json.load(fp)
 
     if args.metric_name == 'spice':
         metric = pd.read_csv(os.path.join(args.metric_path, args.dataset + '_' + args.metric_name + '.csv'), sep=',',
@@ -50,11 +45,21 @@ if __name__ == "__main__":
     elif args.metric_name == 'cider':
         metric = np.load(os.path.join(args.metric_path, args.dataset + '_cider.npy'))
 
+    if args.split == 'testall' and args.dataset == 'coco':
+        metric = metric[:, :5000]
+    elif args.split == 'test' and args.dataset == 'coco':
+        metric = metric[:, :1000]
+
+
+    if len(sims) == 1000 and args.dataset == 'coco' and args.split == 'testall':
+        raise ValueError('You cant have coco with 1k and testall option together')
+
     filename = os.path.join(args.metric_path, 'sims_' + args.model_name + '_' + args.dataset + '_precomp.json')
     sims = json.load(open(filename, 'r'))
 
     M = Metric(metric, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
                include_anns=args.include_anns, model_name=args.model_name)
+
     print("\n ... LOADING DATA ...\n")
     scores = M.compute_metrics()
