@@ -50,12 +50,11 @@ if __name__ == "__main__":
     elif args.split == 'test' and args.dataset == 'coco':
         metric = metric[:, :1000]
 
+    filename = os.path.join(args.metric_path, 'sims_' + args.model_name + '_' + args.dataset + '_precomp.json')
+    sims = json.load(open(filename, 'r'))
 
     if len(sims) == 1000 and args.dataset == 'coco' and args.split == 'testall':
         raise ValueError('You cant have coco with 1k and testall option together')
-
-    filename = os.path.join(args.metric_path, 'sims_' + args.model_name + '_' + args.dataset + '_precomp.json')
-    sims = json.load(open(filename, 'r'))
 
     M = Metric(metric, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
