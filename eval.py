@@ -24,7 +24,7 @@ if __name__ == "__main__":
     parser.add_argument('--score', default=['hard', 'soft', 'softer'], nargs="+",
                         help='which scoring method to use, options are: hard, soft, softer')
 
-    parser.add_argument('--model_name', type=str, default='VSRN_cider',
+    parser.add_argument('--model_name', type=str, default='./out/sims_VSRN_coco_precomp.json',
                         help='which model to use, options are: VSEPP, SCAN, VSRN, CVSE')
 
     parser.add_argument('--threshold', type=int, default=1,
@@ -50,7 +50,7 @@ if __name__ == "__main__":
     elif args.split == 'test' and args.dataset == 'coco':
         metric = metric[:, :1000]
 
-    filename = os.path.join(args.metric_path, 'sims_' + args.model_name + '_' + args.dataset + '_precomp.json')
+    filename = os.path.join(args.model_name)
     sims = json.load(open(filename, 'r'))
 
     if len(sims) == 1000 and args.dataset == 'coco' and args.split == 'testall':
