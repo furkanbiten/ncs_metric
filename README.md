@@ -1,7 +1,7 @@
 # Is An Image Worth Five Sentences? A New Look into Semantics for Image-Text Matching
 Welcome! In this repo, you can find the code for [our paper](https://arxiv.org/pdf/2110.02623.pdf) published in WACV 2022. 
 
-![Adaptive Margin Model!](./models.png)
+![Adaptive Margin Model!](./models.jpg)
 
 ## To those who are curious! (How did you do it?)
 ### SPICE
