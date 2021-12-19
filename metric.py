@@ -1,25 +1,21 @@
-import argparse
 import tqdm
-import json
-import os
 import math
 
 import numpy as np
-import pandas as pd
 
 from collections import defaultdict
 
 
 class Metric:
     def __init__(self, metric, sims, recall_type, score, metric_name, recall_thresholds=[1,5,10], threshold=1,
-                 dataset='coco', include_anns=False, model_name='None'):
+                 dataset='coco', include_anns=False, model_name='None', text_per_image=5):
 
         assert(type(score) is list)
         assert(type(recall_thresholds) is list)
 
         self.IMG_THRESHOLD = int(threshold)
-        self.FUNCTION_MAP = {'hard': self.hard, 'soft': self.soft, 'softer': self.softer}
-        self.TEXT_PER_IMG = 5
+        self.FUNCTION_MAP = {'hard': self.hard, 'soft': self.soft, 'NCS': self.NCS}
+        self.TEXT_PER_IMG = text_per_image
         self.RECALL_THRESHOLDS = recall_thresholds
         self.TOP_K = self.RECALL_THRESHOLDS[-1]
 
@@ -63,7 +59,7 @@ class Metric:
     def build_ranks(self, sims):
         ranks = {}
         for sc in self.score:
-            if sc == 'softer':
+            if sc == 'NCS':
                 ranks[sc] = np.zeros((len(sims), self.TOP_K))
             else:
                 ranks[sc] = []
@@ -101,8 +97,8 @@ class Metric:
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
-        elif score_type == 'softer':
-            scores['softer_order'] = {}
+        elif score_type == 'NCS':
+            # scores['NCS_order'] = {}
             for ix, thr in enumerate(self.RECALL_THRESHOLDS):
                 # r_at_thr = 100.0 * ranks[:, :thr].mean(axis=1).mean(axis=0) / (
                 #     gt_ranks[:, :thr].mean(axis=1).mean(axis=0))
@@ -111,18 +107,18 @@ class Metric:
                 scores[thr] = r_at_thr
                 print_str += ", R@{}: {}".format(thr, r_at_thr)
 
-                # For calculation of softer score with taken into account the order of the element
-                r_at_thr_order = np.array([[elm * math.log(thr - ix + 1, 2) for ix, elm in enumerate(r)]
-                                           for r in ranks[:, :thr]])
-                gt_ranks_at_thr_order = np.array([[elm*math.log(thr-ix+1, 2) for ix, elm in enumerate(r)]
-                                                  for r in gt_ranks[:, :thr]])
+                # For calculation of NCS score with taken into account the order of the element
+                # r_at_thr_order = np.array([[elm * math.log(thr - ix + 1, 2) for ix, elm in enumerate(r)]
+                #                            for r in ranks[:, :thr]])
+                # gt_ranks_at_thr_order = np.array([[elm*math.log(thr-ix+1, 2) for ix, elm in enumerate(r)]
+                                                  # for r in gt_ranks[:, :thr]])
 
-                softer_order_score = [ret.mean()/(gt.mean()+1e-10)
-                                                       for ret, gt in zip(r_at_thr_order, gt_ranks_at_thr_order)]
-                softer_order_score = np.array(softer_order_score).mean()
-                scores['softer_order'][thr] = 100.0 * softer_order_score
+                # NCS_order_score = [ret.mean()/(gt.mean()+1e-10)
+                #                                        for ret, gt in zip(r_at_thr_order, gt_ranks_at_thr_order)]
+                # NCS_order_score = np.array(NCS_order_score).mean()
+                # scores['NCS_order'][thr] = 100.0 * NCS_order_score
 
-            print("Softer order score with {}:".format(self.recall_type.capitalize())+ ' '.join([" R@{}: {}".format(thr, sc) for thr, sc in scores['softer_order'].items()]))
+            # print("NCS metric with order score with {}:".format(self.recall_type.capitalize())+ ' '.join([" R@{}: {}".format(thr, sc) for thr, sc in scores['NCS_order'].items()]))
         print(print_str)
         return scores
 
@@ -232,7 +228,7 @@ class Metric:
             # rel = [self.metric[ix, i] if i in relevant_indexes else 0 for i in inds[:10]]
             ranks.append(rel)
 
-    def softer(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
+    def NCS(self, ix, inds, ranks, modality='i2t', gt_ranks=None):
         if modality == 'i2t':
             # ranks[ix, :] = self.metric[inds[:self.TOP_K]][:, ix]
             ranks[ix, :] = self.metric[inds[:self.TOP_K], ix]

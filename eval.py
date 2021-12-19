@@ -8,11 +8,10 @@ from metric import Metric
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset_path', type=str, default='./data', help='ground truth data path')
 
     parser.add_argument('--metric_path', type=str, default='./out', help='the path that has metrics and model output')
 
-    parser.add_argument('--dataset', type=str, default='coco', help='which dataset to use, options are: coco, f30k')
+    parser.add_argument('--dataset', type=str, default='f30k', help='which dataset to use, options are: coco, f30k')
     parser.add_argument('--split', type=str, default='testall',
                         help='Choose to evaluate on coco 1k test set or 5k test set. (test | testall)')
 
@@ -21,10 +20,10 @@ if __name__ == "__main__":
 
     parser.add_argument('--recall_type', type=str, default='recall', help='Options are recall and vse_recall')
 
-    parser.add_argument('--score', default=['hard', 'soft', 'softer'], nargs="+",
-                        help='which scoring method to use, options are: hard, soft, softer')
+    parser.add_argument('--score', default=['hard', 'soft', 'NCS'], nargs="+",
+                        help='which scoring method to use, options are: hard, soft, NCS')
 
-    parser.add_argument('--model_name', type=str, default='./out/sims_VSRN_coco_precomp.json',
+    parser.add_argument('--model_path', type=str, default='./out/sims_VSRN_metric_f30k_precomp.json',
                         help='which model to use, options are: VSEPP, SCAN, VSRN, CVSE')
 
     parser.add_argument('--threshold', type=int, default=1,
@@ -50,7 +49,7 @@ if __name__ == "__main__":
     elif args.split == 'test' and args.dataset == 'coco':
         metric = metric[:, :1000]
 
-    filename = os.path.join(args.model_name)
+    filename = os.path.join(args.model_path)
     sims = json.load(open(filename, 'r'))
 
     if len(sims) == 1000 and args.dataset == 'coco' and args.split == 'testall':
@@ -60,7 +59,7 @@ if __name__ == "__main__":
 
     M = Metric(metric, sims, recall_type=args.recall_type, score=args.score, metric_name=args.metric_name,
                recall_thresholds=args.recall_thresholds, threshold=args.threshold, dataset=args.dataset,
-               include_anns=args.include_anns, model_name=args.model_name)
+               include_anns=args.include_anns, model_name=args.model_path)
 
     print("\n ... LOADING DATA ...\n")
     scores = M.compute_metrics()
