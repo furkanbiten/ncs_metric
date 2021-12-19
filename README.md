@@ -6,6 +6,7 @@ Welcome! In this repo, you can find the code for [our paper](https://arxiv.org/p
 Main idea of this metric is to use classic image captioning metrics CIDEr or SPICE 
 to better evaluate retrieval models. 
 
+Using our metric as an adaptive margin can be found in https://github.com/andrespmd/semantic_adaptive_margin.
 Roughly, we want to take into account the NON-GROUND TRUTH items effect in top-k retrieved items to better evaluate what our models does.
 
 Now, this repo is divided into main section. 
