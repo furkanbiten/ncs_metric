@@ -41,7 +41,9 @@ You are a pragmatist and just wanna use the code (I feel you!). Download the pre
 [here.](https://cvcuab-my.sharepoint.com/:f:/g/personal/abiten_cvc_uab_cat/EgwpEC4zrT1FgTVBO8Hmn00BsU6zKMyrDVSTZQUqx3avOg?e=jmlZHG)
 
 As a format, we expect a similarity matrix saved as json where each row are images and each column are sentences. 
-Distance metric choice doesn't matter, you can use anything.
+For example, for Flickr30k, the matrix would have dimensions of 1000x5000; 1000 images, 5000 sentences.
+Distance metric choice doesn't matter, you can use anything. As an example of the format, we provide some of models' 
+[similarity matrix](https://cvcuab-my.sharepoint.com/:f:/g/personal/abiten_cvc_uab_cat/EuPuw1S_3UREud7cOCZs8roBojqoHu6FPSpcKaQOoPdBCA?e=kW9YkX).
 
 Finally, just run to get the results:
 ```bash
