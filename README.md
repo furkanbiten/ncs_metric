@@ -48,3 +48,7 @@ Finally, just run to get the results:
 python eval.py --dataset [coco/f30k] --metric_name [spice/cider] --model_path [ThePathToSimilarityMatrix]
 ```
 There are more options to be selected, you can read them inside the code. 
+
+## Conclusion
+
+To err is human.
