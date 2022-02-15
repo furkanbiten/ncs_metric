@@ -7,7 +7,7 @@ Main idea of this metric is to use classic image captioning metrics CIDEr or SPI
 to better evaluate retrieval models. 
 
 Using our metric as an adaptive margin can be found in https://github.com/andrespmd/semantic_adaptive_margin.
-Roughly, we want to take into account the NON-GROUND TRUTH items effect in top-k retrieved items to better evaluate what our models does.
+Roughly, we want to take into account the NON-GROUND TRUTH items effect in top-k retrieved items to better evaluate what our models do.
 
 Now, this repo is divided into main section. 
 The former is for the curious and while the latter is for the pragmatists! 
